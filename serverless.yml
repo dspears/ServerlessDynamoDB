@@ -1,0 +1,80 @@
+service: serverless_dynamodb 
+
+plugins:
+  - serverless-pseudo-parameters
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  iamRoleStatements:
+    - Effect: Allow
+      Action: 
+        - dynamodb:query
+        - dynamodb:scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: arn:aws:dynamodb:#{AWS::Region}:#{AWS::AccountId}:table/documents_ds
+
+functions:
+
+  post-document:
+    handler: functions/post-document.handler
+    events:
+      - http:
+          path: /documents/
+          method: post
+    environment:
+      documents_table: documents_ds
+
+  get-document:
+    handler: functions/get-document.handler
+    events:
+      - http:
+          path: /documents/{id}
+          method: get
+          request: 
+            parameters: 
+               paths: 
+                 id: true
+    environment:
+      documents_table: documents_ds
+
+  get-all-documents:
+    handler: functions/get-all-documents.handler
+    events:
+      - http:
+          path: /documents/
+          method: get
+    environment:
+      documents_table: documents_ds
+
+  delete-document:
+    handler: functions/delete-document.handler
+    events:
+      - http:
+          path: /documents/{id}
+          method: delete
+          request: 
+            parameters: 
+               paths: 
+                 id: true
+    environment:
+      documents_table: documents_ds
+
+resources:
+  Resources:
+    documentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: documents_ds
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
